@@ -1,34 +1,51 @@
-export default async function handler(req, res) {
-  // Set CORS headers so any webpage can call this endpoint
+const https = require('https');
+
+module.exports = async function handler(req, res) {
+  // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  // Handle preflight requests (browser asks "can I call this?" before actually calling)
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
 
-  const { q } = req.query;
+  const q = req.query.q;
 
   if (!q) {
     return res.status(400).json({ error: 'Missing q parameter' });
   }
 
-  const maUrl = `https://www.metal-archives.com/search/ajax-band-search/?field=name&query=${encodeURIComponent(q)}&sEcho=1&iColumns=3&iDisplayStart=0&iDisplayLength=50`;
+  const path = `/search/ajax-band-search/?field=name&query=${encodeURIComponent(q)}&sEcho=1&iColumns=3&iDisplayStart=0&iDisplayLength=50`;
+
+  const options = {
+    hostname: 'www.metal-archives.com',
+    port: 443,
+    path: path,
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Referer': 'https://www.metal-archives.com/',
+    },
+  };
 
   try {
-    const response = await fetch(maUrl, {
-      headers: {
-        // Mimic a real browser so Metal Archives doesn't block us
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Referer': 'https://www.metal-archives.com/',
-      },
+    const data = await new Promise((resolve, reject) => {
+      const request = https.request(options, (response) => {
+        let body = '';
+        response.on('data', (chunk) => { body += chunk; });
+        response.on('end', () => resolve(body));
+      });
+      request.on('error', (err) => reject(err));
+      request.end();
     });
 
-    const data = await response.json();
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch from Metal Archives' });
+    const json = JSON.parse(data);
+    return res.status(200).json(json);
+  } catch (err) {
+    return res.status(500).json({
+      error: err.message,
+      stack: err.stack
+    });
   }
-}
+};
