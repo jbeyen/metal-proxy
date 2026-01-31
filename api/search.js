@@ -1,5 +1,6 @@
 const https = require('https');
 
+// v2 - force redeploy
 module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
