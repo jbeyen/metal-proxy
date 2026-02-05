@@ -35,14 +35,24 @@ module.exports = async function handler(req, res) {
       const request = https.request(options, (response) => {
         let body = '';
         response.on('data', (chunk) => { body += chunk; });
-        response.on('end', () => resolve(body));
+        response.on('end', () => resolve({ body, statusCode: response.statusCode, headers: response.headers }));
       });
       request.on('error', (err) => reject(err));
       request.end();
     });
 
-    const json = JSON.parse(data);
-    return res.status(200).json(json);
+    // If it looks like JSON, parse it
+    if (data.body.trim().startsWith('{')) {
+      const json = JSON.parse(data.body);
+      return res.status(200).json(json);
+    } else {
+      // Return debug info
+      return res.status(500).json({
+        error: 'Metal Archives returned non-JSON response',
+        statusCode: data.statusCode,
+        preview: data.body.substring(0, 500)
+      });
+    }
   } catch (err) {
     return res.status(500).json({
       error: err.message,
