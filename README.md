@@ -25,7 +25,7 @@ We did this to avoid Cloudflare bot detection that blocks cloud-hosted proxies.
 
 I love Metal Archives as a resource and use it for exactly one thing: looking up bands. I do this exclusively on my phone from either record shops or shows - the site isn't responsive, so I end up trying to tap on (what felt like) a 3-pixel-high search box in a corner of the screen. I just wanted a page with a giant metal search bar -  that's it. 
 
-I first set this up to run locally, since I hit walls with their bot detection. After discussing with their webmaster, I decided to scrape the data I was interested in (I might set up a cron job to do it once a week), and build an API to query the data on my machine directly. If you want to play with it...
+I first set this up to run locally, since I hit walls with their bot detection. After discussing with their webmaster, I decided to scrape the data I was interested in (I might set up a cron job to do it once a week), and build an API to query the data on my machine directly.
 
 
 ## Running Locally
@@ -58,7 +58,6 @@ metal-search/
 ├── search-api.js      # API server (serves frontend + search endpoint)
 ├── scraper.js         # Fetches all bands from Metal Archives
 ├── metal-search.html  # Search UI
-├── bands.db           # SQLite database (195k bands, ~49MB)
 ├── fly.toml           # Fly.io deployment config
 └── Dockerfile         # Container definition
 ```
