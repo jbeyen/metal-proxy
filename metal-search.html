@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Search Bar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --highlight: #FF6B6B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inconsolata', monospace;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 3rem 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            font-family: 'Inconsolata', monospace;
+            color: #000;
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--highlight);
+        }
+
+        input[type="text"]::placeholder {
+            color: #999;
+        }
+
+        .results {
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: var(--highlight);
+        }
+
+        .single-result {
+            padding: 1rem 0;
+            border-left: 3px solid var(--highlight);
+            padding-left: 1rem;
+        }
+
+        .single-result h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #000;
+        }
+
+        .single-result h2 a {
+            color: #000;
+            text-decoration: none;
+        }
+
+        .single-result h2 a:hover {
+            color: var(--highlight);
+        }
+
+        .single-result .meta {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .single-result .genre {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        .multi-results {
+            list-style: none;
+        }
+
+        .multi-results li {
+            border-bottom: 1px solid #eee;
+        }
+
+        .multi-results li:last-child {
+            border-bottom: none;
+        }
+
+        .multi-results a {
+            display: block;
+            padding: 0.75rem 0;
+            color: #000;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .multi-results a:hover {
+            color: var(--highlight);
+        }
+
+        .multi-results .band-name {
+            font-weight: 600;
+            margin-bottom: 0.125rem;
+        }
+
+        .multi-results .band-info {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .no-results {
+            color: #666;
+            font-style: italic;
+        }
+
+        .result-count {
+            color: #666;
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .clear-btn {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            font-family: 'Inconsolata', monospace;
+            font-size: 1rem;
+            background: none;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            color: #666;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .clear-btn:hover {
+            border-color: var(--highlight);
+            color: var(--highlight);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Metal Search Bar</h1>
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Search for a band..." autofocus>
+        </div>
+        <button class="clear-btn" id="clear-btn">Clear</button>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('search');
+        const resultsDiv = document.getElementById('results');
+        const clearBtn = document.getElementById('clear-btn');
+        let debounceTimer;
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            resultsDiv.innerHTML = '';
+            clearBtn.style.display = 'none';
+            searchInput.focus();
+        });
+
+        // Use the same host that served this page (works from phone or computer)
+        const PROXY_URL = window.location.origin + '/search';
+
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                resultsDiv.innerHTML = '';
+                clearBtn.style.display = 'none';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p class="loading">Searching...</p>';
+
+            debounceTimer = setTimeout(() => searchBands(query), 300);
+        });
+
+        async function searchBands(query) {
+            try {
+                const response = await fetch(`${PROXY_URL}?q=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+                const data = await response.json();
+                displayResults(data.aaData);
+            } catch (err) {
+                resultsDiv.innerHTML = `<p class="error">Search failed. Check console for details.</p>`;
+                console.error(err);
+            }
+        }
+
+        function displayResults(bands) {
+            clearBtn.style.display = 'inline-block';
+
+            if (!bands || bands.length === 0) {
+                resultsDiv.innerHTML = '<p class="no-results">No bands found</p>';
+                return;
+            }
+
+            // Parse band data - each item is [name with link, genre, country]
+            const parsed = bands.map(band => {
+                const nameMatch = band[0].match(/href="([^"]+)"[^>]*>([^<]+)<\/a>/);
+                return {
+                    url: nameMatch ? nameMatch[1] : '#',
+                    name: nameMatch ? nameMatch[2] : 'Unknown',
+                    genre: band[1],
+                    country: band[2]
+                };
+            });
+
+            if (parsed.length === 1) {
+                // Single result - show detailed view
+                const band = parsed[0];
+                resultsDiv.innerHTML = `
+                    <div class="single-result">
+                        <h2><a href="${band.url}" target="_blank">${band.name}</a></h2>
+                        <div class="meta">
+                            <div>${band.country}</div>
+                            <div class="genre">${band.genre}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Multiple results - show list
+                const listItems = parsed.map(band => `
+                    <li>
+                        <a href="${band.url}" target="_blank">
+                            <div class="band-name">${band.name}</div>
+                            <div class="band-info">${band.country} · ${band.genre}</div>
+                        </a>
+                    </li>
+                `).join('');
+
+                resultsDiv.innerHTML = `
+                    <p class="result-count">${parsed.length} bands found</p>
+                    <ul class="multi-results">${listItems}</ul>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

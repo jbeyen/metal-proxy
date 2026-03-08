@@ -1,2 +1,8 @@
-.vercel
-.env*.local
+.DS_Store
+bands.db
+node_modules/
+scrape.log
+metal-proxy.js
+cloudflare-worker.js
+vercel-metal-proxy/
+CLAUDE.md

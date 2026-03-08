@@ -1,8 +1,17 @@
 {
-  "name": "metal-archives-proxy",
+  "name": "metal-search",
   "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": "22.x"
+  "description": "Metal Archives band search with local database",
+  "scripts": {
+    "start": "node search-api.js",
+    "scrape": "node scraper.js",
+    "scrape:stats": "node scraper.js --stats",
+    "proxy": "node metal-proxy.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10"
   }
 }
